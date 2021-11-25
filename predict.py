@@ -15,6 +15,7 @@ from tqdm import tqdm
 import codecs
 import json
 import uuid
+import subprocess
 
 from extractor_model import TriggerExtractor, ArgumentExtractor
 from dueereader import CustomSpanField, DataMeta, TriggerReader, RoleReader, TextReader
@@ -224,7 +225,57 @@ def transform(input_sentence):
             print(output_sentence)
             print('=====finish!=====')
             return output_sentence  
-  
+
+def GDAP_transform(input_sentence):
+    # print(subprocess.run("sh test.sh", shell=True))
+    
+    # 将input_sentence 转化为临时et文件
+    et_text_file = codecs.open('GDAP/cache/et/text.json', 'w', "UTF-8")
+    input_data = json.loads(input_sentence)
+    et_text_file.write(json.dumps({'text': input_data["text"], 'event': ""}, ensure_ascii=False) + '\n')
+
+    # 模型预测et, 结果输出到GDAP/cache/et/et_result.txt
+    print("====== et detection ======\n")
+    subprocess.run('CUDA_VISIBLE_DEVICES=0 python GDAP/run_seq2seq.py \
+        --do_predict --task=event --predict_with_generate \
+        --validation_file=GDAP/cache/et/text.json \
+        --test_file=GDAP/cache/et/text.json \
+        --event_schema=GDAP/cache/event.schema \
+        --model_name_or_path="XXX" \
+        --output_dir=GDAP/cache/et/et_result.txt \
+        --source_prefix="span: " \
+        --constraint_decoding \
+        --per_device_eval_batch_size=1 \
+        --decoding_format et', shell=True)
+
+    # 根据schema与et输出组合role的抽取文件
+    subprocess.run('python convert_et_result.py \
+        --et_pred_file=GDAP/cache/et/et_result.txt \
+        --et_text_file=GDAP/cache/et/text.json \
+        --et_output_file=GDAP/cache/role/role_text.json \
+        --schema_file=GDAP/cache/event.schema', shell=True)    
+
+    # 模型预测role, 结果输出到GDAP/cache/role/role_text.json
+    print("====== role extraction ======\n")
+    subprocess.run('CUDA_VISIBLE_DEVICES=0 python GDAP/run_seq2seq.py \
+        --do_predict --task=event --predict_with_generate \
+        --validation_file=GDAP/cache/role/role_text.json \
+        --test_file=GDAP/cache/role/role_text.json \
+        --event_schema=GDAP/cache/event.schema \
+        --model_name_or_path="XXX" \
+        --output_dir=GDAP/cache/role/role_result.txt \
+        --source_prefix="span: " \
+        --constraint_decoding \
+        --per_device_eval_batch_size=1 \
+        --decoding_format role', shell=True)   
+
+    # 读取预测文件进行输出
+
+    # et结果文件
+
+    # role结果文件
+    
+    return []
 
 if __name__ == "__main__":
     input = {}
@@ -234,4 +285,5 @@ if __name__ == "__main__":
     input['id'] = id
     inputJson = json.dumps(input)
 
-    transform(inputJson)
+    # transform(inputJson)
+    GDAP_transform(inputJson)
