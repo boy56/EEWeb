@@ -17,6 +17,7 @@ def home():
       return render_template("index.html")
    else:
       text = request.form["text"]
+      print(text)
       language = request.form["language"]
       model = request.form['model']
       input = {}
@@ -29,13 +30,20 @@ def home():
       output = predict(inputJson, model=model, language=language)
       result['text'] = output
       types = {}
+      print(output)
+      if not output: # 处理识别不出的事件
+         output = [{'event_type': '未能识别'}]
+
       for item in output:
          type = item['event_type']
          if type not in types.keys():
             args = set()
             types[type] = args
-         for it in item['arguments']:
-            types[type].add(it['role'] + '--' + it['argument'])
+         
+         if 'arguments' in item:
+            for it in item['arguments']:
+               types[type].add(it['role'] + '--' + it['argument'])
+
       result['event'] = types        
       return render_template("index.html", result=result)
 
@@ -43,7 +51,7 @@ def home():
 def predict(inputJson, model, language):
    if model == "" or language == "":
       return ""
-   if model == "PLMEE":
+   if model == "EE":
       if language == "Chinese":
          return transform(inputJson)
       else:

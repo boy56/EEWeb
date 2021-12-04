@@ -88,8 +88,8 @@ def trigger_extractor_deal(pre_dataset, iterator, trigger_model_path, dataset_me
     # print(pre_dataset)
     for instance in pre_dataset:
         tmp_id = instance['sentence_id'].metadata
-        if tmp_id in id_data:
-            print(tmp_id)
+        # if tmp_id in id_data:
+        #     print(tmp_id)
         id_data[tmp_id] = instance
 
     for data in tqdm(iterator(pre_dataset, num_epochs=1)):
@@ -194,11 +194,11 @@ def transform(input_sentence):
     text_reader = TextReader(data_meta=data_meta, token_indexer=bert_indexer)
     pre_dataset = text_reader.read(input_sentence)
     
-    print('=====> Extracting triggers...')
+    # print('=====> Extracting triggers...')
 
     instances = trigger_extractor_deal(pre_dataset=pre_dataset, iterator=iterator, trigger_model_path=trigger_model_path, dataset_meta=data_meta)
 
-    print('=====> Extracting arguments...')
+    # print('=====> Extracting arguments...')
     pred_spans = argument_extractor_deal(instances=instances, iterator=iterator, argument_model_path=argument_model_path, dataset_meta=data_meta)
     # exit(0)
     id_sentence = {} 
@@ -222,7 +222,7 @@ def transform(input_sentence):
 
                 tmp_elist.append(e_dict)
             output_sentence = tmp_elist
-            print(output_sentence)
+            # print(output_sentence)
             print('=====finish!=====')
             return output_sentence  
 
